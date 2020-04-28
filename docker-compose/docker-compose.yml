@@ -24,8 +24,8 @@ services:
     depends_on:
       - elasticsearch
 
-# $ docker exec -it $(docker ps -qf "name=kafka") /bin/bash
-# $ kafka-consumer-groups --bootstrap-server kafka:9092 --describe --group jaeger-ingester
+  # $ docker exec -it $(docker ps -qf "name=kafka") /bin/bash
+  # $ kafka-consumer-groups --bootstrap-server kafka:9092 --describe --group jaeger-ingester
   kafka:
     image: confluentinc/cp-kafka:4.0.1
     ports:
@@ -49,7 +49,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: "2181"
 
   jaeger-collector:
-    image: jaegertracing/jaeger-collector:1.8.2
+    image: jaegertracing/jaeger-collector:1.17
     ports:
       # HTTP collector port to receive spans
       - "14268:14268"
@@ -58,30 +58,33 @@ services:
     restart: on-failure
     environment:
       LOG_LEVEL: "debug"
-      SPAN_STORAGE_TYPE: "kafka"
-      KAFKA_BROKERS: "kafka:29092"
-
-  jaeger-ingester:
-    image: jaegertracing/jaeger-ingester:1.8.2
-    ports:
-      # HTTP health check port: $ curl -v http://localhost:14270/
-      - "14270:14270"
-      # Metrics port: $ curl http://localhost:14271/metrics
-      - "14271:14271"
-    restart: on-failure
-    environment:
-      # LOG_LEVEL: "debug"
-      INGESTER_PARALLELISM: "1"
-      INGESTER_DEADLOCKINTERVAL: "0ms"
-      SPAN_STORAGE_TYPE: "elasticsearch"
+      SPAN_STORAGE_TYPE: "elasticsearch,kafka"
+      KAFKA_PRODUCER_ENCODING: "json"
+      KAFKA_PRODUCER_BROKERS: "kafka:29092"
       ES_SERVER_URLS: "http://elasticsearch:9200"
-      KAFKA_BROKERS: "kafka:29092"
-      METRICS_BACKEND: "expvar"
-    depends_on:
-      - elasticsearch
+
+#    jaeger-ingester:
+#      image: jaegertracing/jaeger-ingester:1.17
+#      ports:
+#        # HTTP health check port: $ curl -v http://localhost:14270/
+#        - "14270:14270"
+#        # Metrics port: $ curl http://localhost:14271/metrics
+#        - "14271:14271"
+#      restart: on-failure
+#      environment:
+#        # LOG_LEVEL: "debug"
+#        INGESTER_PARALLELISM: "1"
+#        INGESTER_DEADLOCKINTERVAL: "0ms"
+#        SPAN_STORAGE_TYPE: "elasticsearch"
+#        ES_SERVER_URLS: "http://elasticsearch:9200"
+#        KAFKA_CONSUMER_BROKERS: "kafka:29092"
+#        KAFKA_CONSUMER_ENCODING: "json"
+#        METRICS_BACKEND: "expvar"
+#      depends_on:
+#        - elasticsearch
 
   jaeger:
-    image: jaegertracing/jaeger-query:1.8.2
+    image: jaegertracing/jaeger-query:1.17
     ports:
       # Jaeger UI port
       - "16686:16686"
